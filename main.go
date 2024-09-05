@@ -6,10 +6,11 @@ import (
 )
 
 func main() {
-
+	// 创世区块
 	genesisBlockChain := blc.CreateBlockChainWithGenesisBlock()
 
-	fmt.Println(genesisBlockChain)
+	// 新增区块
+	genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
+	genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
 	fmt.Println(genesisBlockChain.Blocks)
-	fmt.Println(genesisBlockChain.Blocks[0])
 }
