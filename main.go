@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
-	block := blc.NewBlock(1, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "Genesis Block")
-	fmt.Println(block)
+
+	genesisBlock := blc.NewGenesisBlock("Genesis Block")
+
+	fmt.Println(genesisBlock)
 }

@@ -31,6 +31,8 @@ func NewBlock(height int64, prevHash []byte, data string) *Block {
 	block.SetHash()
 	return block
 }
+
+// 生成哈希
 func (block *Block) SetHash() {
 	// 1. 将Height、PrevHash、Data、Timestamp拼接成字节数组
 	info := bytes.Join([][]byte{
@@ -43,4 +45,9 @@ func (block *Block) SetHash() {
 	hash := sha256.Sum256(info)
 	// 3. 将哈希值赋值给block的Hash属性
 	block.Hash = hash[:]
+}
+
+// 生成创世区块
+func NewGenesisBlock(data string) *Block {
+	return NewBlock(1, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, data)
 }
