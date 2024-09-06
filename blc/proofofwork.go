@@ -37,6 +37,14 @@ func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	return data
 }
 
+// 验证挖矿结果
+func (pow *ProofOfWork) IsValid() bool {
+	var hashInt big.Int
+	hashInt.SetBytes(pow.Block.Hash)
+	isValid := hashInt.Cmp(pow.target) == -1
+	return isValid
+}
+
 // 开始挖矿
 func (pow *ProofOfWork) Run() (int64, []byte) {
 	var hashInt big.Int //存储我们新生成的hash
