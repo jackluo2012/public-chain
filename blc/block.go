@@ -1,8 +1,6 @@
 package blc
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"time"
 )
 
@@ -17,6 +15,9 @@ type Block struct {
 	Timestamp int64
 	// 当前区块的哈希
 	Hash []byte
+
+	// Nonce 添加工作量证明的难度
+	Nonce int64
 }
 
 func NewBlock(height int64, prevHash []byte, data string) *Block {
@@ -26,25 +27,14 @@ func NewBlock(height int64, prevHash []byte, data string) *Block {
 		Data:      []byte(data),
 		Timestamp: time.Now().Unix(),
 		Hash:      nil,
+		Nonce:     0,
 	}
-	// 调用生成哈希的方法
-	block.SetHash()
+	// 调用工作量证明，并且 返回有效的Hash和Nonce值
+	pow := NewProofOfWork(block)
+	// 调用工作量证明，并且 返回有效的Hash和Nonce值
+	block.Nonce, block.Hash = pow.Run()
+	//
 	return block
-}
-
-// 生成哈希
-func (block *Block) SetHash() {
-	// 1. 将Height、PrevHash、Data、Timestamp拼接成字节数组
-	info := bytes.Join([][]byte{
-		IntToHex(block.Height),
-		block.PrevHash,
-		block.Data,
-		IntToHex(block.Timestamp),
-	}, []byte{})
-	// 2. 对拼接好的字节数组进行哈希运算
-	hash := sha256.Sum256(info)
-	// 3. 将哈希值赋值给block的Hash属性
-	block.Hash = hash[:]
 }
 
 // 生成创世区块
