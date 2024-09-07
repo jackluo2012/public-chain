@@ -14,7 +14,7 @@ func main() {
 	// 新增区块
 	genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
 	genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
-
+	genesisBlockChain.PrintChain()
 	// fmt.Println(genesisBlockChain.Blocks)
 
 	// block := blc.NewBlock(1, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "Send 100 RMB to zhangsan")

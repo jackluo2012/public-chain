@@ -2,7 +2,10 @@ package blc
 
 import (
 	// "fmt"
+	"fmt"
 	"log"
+	"math/big"
+	"time"
 
 	"github.com/asdine/storm/v3"
 )
@@ -25,16 +28,9 @@ func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 		log.Panic(err)
 		return err
 	}
-	var lastHash []byte
-	err = tx.Get(BLOCK_BUCKET, "l", &lastHash)
-	if err != nil {
-		log.Panic(err)
-		return err
-	}
-	// fmt.Println("lastHash", lastHash)
 	// // 获取最后一个区块
 	var lastBlock Block
-	err = tx.One("Hash", lastHash, &lastBlock)
+	err = tx.One("Hash", bc.Tip, &lastBlock)
 	if err != nil {
 		log.Panic(err)
 		return err
@@ -48,7 +44,6 @@ func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 		log.Panic(err)
 		tx.Rollback() // 回滚
 		return err
-
 	}
 	// 更新区块链的最后一个区块的hash值
 	err = tx.Set(BLOCK_BUCKET, "l", newBlock.Hash)
@@ -57,6 +52,7 @@ func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 		tx.Rollback() // 回滚
 		return err
 	}
+	bc.Tip = newBlock.Hash
 	return tx.Commit() // 提交
 }
 
@@ -90,4 +86,40 @@ func CreateBlockChainWithGenesisBlock() *BlockChain {
 		Tip: genesisBlock.Hash,
 		DB:  db,
 	}
+}
+
+// 输出所有区块链
+func (bc *BlockChain) PrintChain() {
+
+	//简单的遍历区块链 1
+	// var blocks []*Block
+	// bc.DB.All(&blocks)
+	// for _, block := range blocks {
+	// 	fmt.Println(block.Hash)
+	// 	fmt.Printf("%s\n", block.Data)
+	// }
+	// 2
+	currentHash := bc.Tip
+	for {
+		var block Block
+		err := bc.DB.One("Hash", currentHash, &block)
+		if err != nil {
+			log.Panic(err)
+		}
+		fmt.Printf("Height:%d\n", block.Height)
+		fmt.Printf("PrevHash:%x\n", block.PrevHash)
+		fmt.Printf("Data:%s\n", block.Data)
+
+		fmt.Printf("Timestamp:%s\n", time.Unix(block.Timestamp, 0).Format("2006-01-02 15:04:05"))
+		fmt.Printf("Hash:%x\n", block.Hash)
+		fmt.Printf("Nonce:%d\n", block.Nonce)
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if big.NewInt(0).Cmp(&hashInt) == 0 {
+			break
+		}
+		currentHash = block.PrevHash
+	}
+
 }

@@ -11,7 +11,7 @@ import (
 // 16进制 64位
 // 2^256 / 12 = 2^64
 // 16 个0
-const targetBits = 16
+const targetBits = 12
 
 type ProofOfWork struct {
 	// 区块 当前要验证的区块
