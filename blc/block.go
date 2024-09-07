@@ -1,6 +1,8 @@
 package blc
 
 import (
+	"bytes"
+	"encoding/gob"
 	"time"
 )
 
@@ -20,6 +22,31 @@ type Block struct {
 	Nonce int64
 }
 
+// 区块 序列化
+func (b *Block) Serialize() []byte {
+	var result bytes.Buffer
+	// 创建编码器 打包
+	encoder := gob.NewEncoder(&result)
+	// 编码
+	err := encoder.Encode(b)
+	if err != nil {
+		panic(err)
+	}
+	return result.Bytes()
+}
+
+// 区块 反序列化
+func (b *Block) Deserialize(data []byte) *Block {
+	var block Block
+	// 创建解码器 解包
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	// 解码
+	err := decoder.Decode(&block)
+	if err != nil {
+		panic(err)
+	}
+	return &block //
+}
 func NewBlock(height int64, prevHash []byte, data string) *Block {
 	block := &Block{
 		Height:    height,

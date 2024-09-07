@@ -18,6 +18,12 @@ func main() {
 	fmt.Printf("block: %d\n", block.Nonce)
 	fmt.Printf("block: %x\n", block.Hash)
 
+	bytes := block.Serialize()
+	fmt.Printf("block: %x\n", bytes)
+	block2 := block.Deserialize(bytes)
+	fmt.Printf("block2: %x\n", block2.Hash)
+	fmt.Printf("block2: %d\n", block2.Nonce)
+
 	proofOfWork := blc.NewProofOfWork(block)
 	fmt.Printf("pow: %v\n", proofOfWork.IsValid())
 }
