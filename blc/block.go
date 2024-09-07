@@ -16,7 +16,7 @@ type Block struct {
 	// 时间戳
 	Timestamp int64
 	// 当前区块的哈希
-	Hash []byte
+	Hash []byte `storm:"id"` // primary key
 
 	// Nonce 添加工作量证明的难度
 	Nonce int64
