@@ -1,6 +1,7 @@
 package blc
 
 import (
+	// "fmt"
 	"log"
 
 	"github.com/asdine/storm/v3"
@@ -17,14 +18,47 @@ type BlockChain struct {
 }
 
 // 添加区块到区块链
-// func (bc *BlockChain) AddBlockToBlockChain(data string) {
-// 	// 获取最后一个区块
-// 	lastBlock := bc.Blocks[len(bc.Blocks)-1]
-// 	// 创建新的区块
-// 	newBlock := NewBlock(lastBlock.Height+1, lastBlock.Hash, data)
-// 	// 将新的区块添加到区块链
-// 	bc.Blocks = append(bc.Blocks, newBlock)
-// }
+func (bc *BlockChain) AddBlockToBlockChain(data string) error {
+	// 从数据库获取最后一个区块的hash值
+	tx, err := bc.DB.Begin(true)
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	var lastHash []byte
+	err = tx.Get(BLOCK_BUCKET, "l", &lastHash)
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	// fmt.Println("lastHash", lastHash)
+	// // 获取最后一个区块
+	var lastBlock Block
+	err = tx.One("Hash", lastHash, &lastBlock)
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	// fmt.Println("lastBlock", lastBlock)
+	// 创建新的区块
+	newBlock := NewBlock(lastBlock.Height+1, lastBlock.Hash, data)
+	// 将新的区块保存到数据库
+	err = tx.Save(newBlock)
+	if err != nil {
+		log.Panic(err)
+		tx.Rollback() // 回滚
+		return err
+
+	}
+	// 更新区块链的最后一个区块的hash值
+	err = tx.Set(BLOCK_BUCKET, "l", newBlock.Hash)
+	if err != nil {
+		log.Panic(err)
+		tx.Rollback() // 回滚
+		return err
+	}
+	return tx.Commit() // 提交
+}
 
 // 创建带有创世区块的区块链
 func CreateBlockChainWithGenesisBlock() *BlockChain {

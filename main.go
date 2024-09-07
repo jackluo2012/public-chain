@@ -12,8 +12,8 @@ func main() {
 	//关闭数据库
 	defer genesisBlockChain.DB.Close()
 	// 新增区块
-	// genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
-	// genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
+	genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
+	genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
 
 	// fmt.Println(genesisBlockChain.Blocks)
 
