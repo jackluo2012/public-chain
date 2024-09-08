@@ -20,6 +20,11 @@ type BlockChain struct {
 	DB  *storm.DB // 数据库
 }
 
+// 迭代器
+func (bc *BlockChain) Iterator() *BlockChainIterator {
+	return &BlockChainIterator{bc.Tip, bc.DB}
+}
+
 // 添加区块到区块链
 func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 	// 从数据库获取最后一个区块的hash值
@@ -99,13 +104,33 @@ func (bc *BlockChain) PrintChain() {
 	// 	fmt.Printf("%s\n", block.Data)
 	// }
 	// 2
-	currentHash := bc.Tip
+	// currentHash := bc.Tip
+	// for {
+	// 	var block Block
+	// 	err := bc.DB.One("Hash", currentHash, &block)
+	// 	if err != nil {
+	// 		log.Panic(err)
+	// 	}
+	// 	fmt.Printf("Height:%d\n", block.Height)
+	// 	fmt.Printf("PrevHash:%x\n", block.PrevHash)
+	// 	fmt.Printf("Data:%s\n", block.Data)
+
+	// 	fmt.Printf("Timestamp:%s\n", time.Unix(block.Timestamp, 0).Format("2006-01-02 15:04:05"))
+	// 	fmt.Printf("Hash:%x\n", block.Hash)
+	// 	fmt.Printf("Nonce:%d\n", block.Nonce)
+
+	// 	var hashInt big.Int
+	// 	hashInt.SetBytes(block.PrevHash)
+	// 	if big.NewInt(0).Cmp(&hashInt) == 0 {
+	// 		break
+	// 	}
+	// 	currentHash = block.PrevHash
+	// }
+	// 3
+	blockChainIterator := bc.Iterator()
+
 	for {
-		var block Block
-		err := bc.DB.One("Hash", currentHash, &block)
-		if err != nil {
-			log.Panic(err)
-		}
+		block := blockChainIterator.Next()
 		fmt.Printf("Height:%d\n", block.Height)
 		fmt.Printf("PrevHash:%x\n", block.PrevHash)
 		fmt.Printf("Data:%s\n", block.Data)
@@ -113,13 +138,13 @@ func (bc *BlockChain) PrintChain() {
 		fmt.Printf("Timestamp:%s\n", time.Unix(block.Timestamp, 0).Format("2006-01-02 15:04:05"))
 		fmt.Printf("Hash:%x\n", block.Hash)
 		fmt.Printf("Nonce:%d\n", block.Nonce)
+		fmt.Println()
 
 		var hashInt big.Int
 		hashInt.SetBytes(block.PrevHash)
 		if big.NewInt(0).Cmp(&hashInt) == 0 {
 			break
 		}
-		currentHash = block.PrevHash
 	}
 
 }
