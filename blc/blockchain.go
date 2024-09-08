@@ -71,7 +71,7 @@ func IsDBExist() bool {
 }
 
 // 创建带有创世区块的区块链
-func CreateBlockChainWithGenesisBlock() *BlockChain {
+func CreateBlockChainWithGenesisBlock(data string) {
 	var (
 		tip []byte
 		db  *storm.DB
@@ -79,48 +79,33 @@ func CreateBlockChainWithGenesisBlock() *BlockChain {
 	)
 	if IsDBExist() {
 		fmt.Println("创世区块已经存在，无需再次创建")
-		//创建 或打开 一个数据库
-		db, err = storm.Open(BLOCKCHAIN_DB)
-		if err != nil {
-			log.Panic(err)
-		}
+		os.Exit(1)
+	}
+	//创建 或打开 一个数据库
+	db, err = storm.Open(BLOCKCHAIN_DB)
+	if err != nil {
+		log.Panic(err)
+	}
+	// defer db.Close() // 关闭数据库
+	// 创建创世区块
+	genesisBlock := NewGenesisBlock(data)
+	tx, err := db.Begin(true)
+	if err != nil {
+		log.Panic(err)
+	}
+	// 将创世区块存储到数据库中
+	err = tx.Save(genesisBlock)
+	if err != nil {
+		log.Panic(err)
+	}
+	tip = genesisBlock.Hash
+	// 存储最新区块的hash值
+	err = tx.Set(BLOCK_BUCKET, "l", tip)
+	if err != nil {
+		log.Panic(err)
+	}
+	tx.Commit()
 
-		// 获取最后一个区块的hash值
-		err = db.Get(BLOCK_BUCKET, "l", &tip)
-		if err != nil {
-			log.Panic(err)
-		}
-	} else {
-		//创建 或打开 一个数据库
-		db, err = storm.Open(BLOCKCHAIN_DB)
-		if err != nil {
-			log.Panic(err)
-		}
-		// defer db.Close() // 关闭数据库
-		// 创建创世区块
-		genesisBlock := NewGenesisBlock("Genesis Block")
-		tx, err := db.Begin(true)
-		if err != nil {
-			log.Panic(err)
-		}
-		// 将创世区块存储到数据库中
-		err = tx.Save(genesisBlock)
-		if err != nil {
-			log.Panic(err)
-		}
-		tip = genesisBlock.Hash
-		// 存储最新区块的hash值
-		err = tx.Set(BLOCK_BUCKET, "l", tip)
-		if err != nil {
-			log.Panic(err)
-		}
-		tx.Commit()
-	}
-	// 创建区块链
-	return &BlockChain{
-		Tip: tip,
-		DB:  db,
-	}
 }
 
 // 输出所有区块链
@@ -178,4 +163,30 @@ func (bc *BlockChain) PrintChain() {
 		}
 	}
 
+}
+
+// 返回 blockchain对象
+func GetBlockChainObject() *BlockChain {
+	var (
+		tip []byte
+		db  *storm.DB
+		err error
+	)
+	//创建 或打开 一个数据库
+	db, err = storm.Open(BLOCKCHAIN_DB)
+	if err != nil {
+		log.Panic(err)
+		return nil
+	}
+
+	// 获取最后一个区块的hash值
+	err = db.Get(BLOCK_BUCKET, "l", &tip)
+	if err != nil {
+		log.Panic(err)
+	}
+	// 创建区块链
+	return &BlockChain{
+		Tip: tip,
+		DB:  db,
+	}
 }

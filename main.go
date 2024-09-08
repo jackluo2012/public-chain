@@ -8,10 +8,12 @@ import (
 
 func main() {
 	// 创世区块
-	genesisBlockChain := blc.CreateBlockChainWithGenesisBlock()
-	//关闭数据库
-	defer genesisBlockChain.DB.Close()
-	cli := blc.CLI{Blc: genesisBlockChain}
+	// genesisBlockChain := blc.CreateBlockChainWithGenesisBlock()
+	// //关闭数据库
+	// defer genesisBlockChain.DB.Close()
+	// cli := blc.CLI{Blc: genesisBlockChain}
+	// cli.Run()
+	cli := blc.CLI{}
 	cli.Run()
 	// 新增区块
 	// genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")

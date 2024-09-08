@@ -9,11 +9,16 @@ import (
 
 // 命令行参数
 type BlockCommand struct {
-	AddBlock   AddBlockCommand   `command:"addblock" description:"Add a block to the blockchain"`
-	PrintChain PrintChainCommand `command:"printchain" description:"Print all the blocks in the blockchain"`
+	CreateBlockChainWithGenesisBlock CreateBlockChainWithGenesisBlockCommand `command:"createblockchain" description:"Create blockchain with genesis block"`
+	AddBlock                         AddBlockCommand                         `command:"addblock" description:"Add a block to the blockchain"`
+	PrintChain                       PrintChainCommand                       `command:"printchain" description:"Print all the blocks in the blockchain"`
 }
 
 // 子命令 添加区块
+type CreateBlockChainWithGenesisBlockCommand struct {
+	Data string `short:"d" long:"data" description:"Data for the genesis block"`
+}
+
 type AddBlockCommand struct {
 	Data string `short:"d" long:"data" description:"Data for the block"`
 }
@@ -32,9 +37,21 @@ func (b *PrintChainCommand) Execute(args []string) error {
 }
 
 type CLI struct {
-	Blc *BlockChain
 }
 
+// 添加区块
+func (cli *CLI) AddBlock(data string) {
+	blockChain := GetBlockChainObject()
+	defer blockChain.DB.Close()
+	blockChain.AddBlockToBlockChain(data)
+}
+
+// 打印区块链
+func (cli *CLI) PrintChain() {
+	blockChain := GetBlockChainObject()
+	defer blockChain.DB.Close()
+	blockChain.PrintChain()
+}
 func (cli *CLI) Run() {
 	// 实例化顶层命令
 	var opts BlockCommand
@@ -43,11 +60,14 @@ func (cli *CLI) Run() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	if opts.CreateBlockChainWithGenesisBlock.Data != "" {
+		CreateBlockChainWithGenesisBlock(opts.CreateBlockChainWithGenesisBlock.Data)
+	}
 	if opts.AddBlock.Data != "" {
-		cli.Blc.AddBlockToBlockChain(opts.AddBlock.Data)
+		cli.AddBlock(opts.AddBlock.Data)
 	}
 	if opts.PrintChain.Print {
-		cli.Blc.PrintChain()
+		cli.PrintChain()
 	}
 	// fmt.Println("====", opts.AddBlock.Data)
 }
