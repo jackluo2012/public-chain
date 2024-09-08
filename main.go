@@ -11,10 +11,12 @@ func main() {
 	genesisBlockChain := blc.CreateBlockChainWithGenesisBlock()
 	//关闭数据库
 	defer genesisBlockChain.DB.Close()
+	cli := blc.CLI{Blc: genesisBlockChain}
+	cli.Run()
 	// 新增区块
-	genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
-	genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
-	genesisBlockChain.PrintChain()
+	// genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
+	// genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")
+	// genesisBlockChain.PrintChain()
 	// fmt.Println(genesisBlockChain.Blocks)
 
 	// block := blc.NewBlock(1, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "Send 100 RMB to zhangsan")

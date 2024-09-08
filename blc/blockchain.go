@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/asdine/storm/v3"
@@ -61,34 +62,63 @@ func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 	return tx.Commit() // 提交
 }
 
+// 判断数据库是否存在
+func IsDBExist() bool {
+	if _, err := os.Stat(BLOCKCHAIN_DB); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 // 创建带有创世区块的区块链
 func CreateBlockChainWithGenesisBlock() *BlockChain {
-	//创建 或打开 一个数据库
-	db, err := storm.Open(BLOCKCHAIN_DB)
-	if err != nil {
-		log.Panic(err)
+	var (
+		tip []byte
+		db  *storm.DB
+		err error
+	)
+	if IsDBExist() {
+		fmt.Println("创世区块已经存在，无需再次创建")
+		//创建 或打开 一个数据库
+		db, err = storm.Open(BLOCKCHAIN_DB)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		// 获取最后一个区块的hash值
+		err = db.Get(BLOCK_BUCKET, "l", &tip)
+		if err != nil {
+			log.Panic(err)
+		}
+	} else {
+		//创建 或打开 一个数据库
+		db, err = storm.Open(BLOCKCHAIN_DB)
+		if err != nil {
+			log.Panic(err)
+		}
+		// defer db.Close() // 关闭数据库
+		// 创建创世区块
+		genesisBlock := NewGenesisBlock("Genesis Block")
+		tx, err := db.Begin(true)
+		if err != nil {
+			log.Panic(err)
+		}
+		// 将创世区块存储到数据库中
+		err = tx.Save(genesisBlock)
+		if err != nil {
+			log.Panic(err)
+		}
+		tip = genesisBlock.Hash
+		// 存储最新区块的hash值
+		err = tx.Set(BLOCK_BUCKET, "l", tip)
+		if err != nil {
+			log.Panic(err)
+		}
+		tx.Commit()
 	}
-	// defer db.Close() // 关闭数据库
-	// 创建创世区块
-	genesisBlock := NewGenesisBlock("Genesis Block")
-	tx, err := db.Begin(true)
-	if err != nil {
-		log.Panic(err)
-	}
-	// 将创世区块存储到数据库中
-	err = tx.Save(genesisBlock)
-	if err != nil {
-		log.Panic(err)
-	}
-	// 存储最新区块的hash值
-	err = tx.Set(BLOCK_BUCKET, "l", genesisBlock.Hash)
-	if err != nil {
-		log.Panic(err)
-	}
-	tx.Commit()
 	// 创建区块链
 	return &BlockChain{
-		Tip: genesisBlock.Hash,
+		Tip: tip,
 		DB:  db,
 	}
 }
@@ -131,6 +161,7 @@ func (bc *BlockChain) PrintChain() {
 
 	for {
 		block := blockChainIterator.Next()
+		fmt.Println()
 		fmt.Printf("Height:%d\n", block.Height)
 		fmt.Printf("PrevHash:%x\n", block.PrevHash)
 		fmt.Printf("Data:%s\n", block.Data)

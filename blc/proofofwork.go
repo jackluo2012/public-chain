@@ -53,7 +53,7 @@ func (pow *ProofOfWork) Run() (int64, []byte) {
 	//1.将block的字段拼接成字节数组
 	// 2、生成hash
 	// 3、判断hash是否满足条件，满足则退出循环
-	fmt.Printf("Mining the block containing \"%s\"\n", pow.Block.Data)
+	fmt.Printf("\nMining the block containing \"%s\"\n", pow.Block.Data)
 
 	for {
 		// 1.将block的字段拼接成字节数组
