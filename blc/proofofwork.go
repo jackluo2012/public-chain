@@ -26,7 +26,7 @@ func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.Block.PrevHash,
-			pow.Block.Data,
+			pow.Block.HashTransactions(),
 			IntToHex(pow.Block.Timestamp),
 			IntToHex(int64(targetBits)),
 			IntToHex(int64(nonce)),
@@ -53,7 +53,6 @@ func (pow *ProofOfWork) Run() (int64, []byte) {
 	//1.将block的字段拼接成字节数组
 	// 2、生成hash
 	// 3、判断hash是否满足条件，满足则退出循环
-	fmt.Printf("\nMining the block containing \"%s\"\n", pow.Block.Data)
 
 	for {
 		// 1.将block的字段拼接成字节数组

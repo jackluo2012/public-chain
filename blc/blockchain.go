@@ -27,7 +27,7 @@ func (bc *BlockChain) Iterator() *BlockChainIterator {
 }
 
 // 添加区块到区块链
-func (bc *BlockChain) AddBlockToBlockChain(data string) error {
+func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) error {
 	// 从数据库获取最后一个区块的hash值
 	tx, err := bc.DB.Begin(true)
 	if err != nil {
@@ -43,7 +43,7 @@ func (bc *BlockChain) AddBlockToBlockChain(data string) error {
 	}
 	// fmt.Println("lastBlock", lastBlock)
 	// 创建新的区块
-	newBlock := NewBlock(lastBlock.Height+1, lastBlock.Hash, data)
+	newBlock := NewBlock(lastBlock.Height+1, lastBlock.Hash, txs)
 	// 将新的区块保存到数据库
 	err = tx.Save(newBlock)
 	if err != nil {
@@ -71,7 +71,7 @@ func IsDBExist() bool {
 }
 
 // 创建带有创世区块的区块链
-func CreateBlockChainWithGenesisBlock(data string) {
+func CreateBlockChainWithGenesisBlock(address string) {
 	var (
 		tip []byte
 		db  *storm.DB
@@ -87,8 +87,9 @@ func CreateBlockChainWithGenesisBlock(data string) {
 		log.Panic(err)
 	}
 	// defer db.Close() // 关闭数据库
+	txCoinbase := NewCoinbaseTx(address)
 	// 创建创世区块
-	genesisBlock := NewGenesisBlock(data)
+	genesisBlock := NewGenesisBlock([]*Transaction{txCoinbase})
 	tx, err := db.Begin(true)
 	if err != nil {
 		log.Panic(err)
@@ -149,12 +150,25 @@ func (bc *BlockChain) PrintChain() {
 		fmt.Println()
 		fmt.Printf("Height:%d\n", block.Height)
 		fmt.Printf("PrevHash:%x\n", block.PrevHash)
-		fmt.Printf("Data:%s\n", block.Data)
-
 		fmt.Printf("Timestamp:%s\n", time.Unix(block.Timestamp, 0).Format("2006-01-02 15:04:05"))
 		fmt.Printf("Hash:%x\n", block.Hash)
 		fmt.Printf("Nonce:%d\n", block.Nonce)
-		fmt.Println()
+		fmt.Println("Txs:")
+		for _, tx := range block.Txs {
+			fmt.Printf("%x\n", tx.TxHash)
+			fmt.Println("Vin:")
+			for _, in := range tx.Vins {
+				fmt.Printf("%x\n", in.TxHash)
+				fmt.Printf("%d\n", in.Index)
+				fmt.Printf("%s\n", in.ScriptSig)
+			}
+			fmt.Println("Vout:")
+			for _, out := range tx.Vouts {
+				fmt.Printf("%d\n", out.Value)
+				fmt.Printf("%s\n", out.ScriptPubKey)
+			}
+		}
+		fmt.Println("--------------------------------------------------\n")
 
 		var hashInt big.Int
 		hashInt.SetBytes(block.PrevHash)

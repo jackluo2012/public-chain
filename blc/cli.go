@@ -16,7 +16,7 @@ type BlockCommand struct {
 
 // 子命令 添加区块
 type CreateBlockChainWithGenesisBlockCommand struct {
-	Data string `short:"d" long:"data" description:"Data for the genesis block"`
+	Address string `short:"a" long:"address" description:"address for the genesis block"`
 }
 
 type AddBlockCommand struct {
@@ -43,7 +43,11 @@ type CLI struct {
 func (cli *CLI) AddBlock(data string) {
 	blockChain := GetBlockChainObject()
 	defer blockChain.DB.Close()
-	blockChain.AddBlockToBlockChain(data)
+	blockChain.AddBlockToBlockChain([]*Transaction{})
+}
+func (cli *CLI) CreateBlockChainWithGenesisBlock(address string) {
+
+	CreateBlockChainWithGenesisBlock(address)
 }
 
 // 打印区块链
@@ -60,8 +64,8 @@ func (cli *CLI) Run() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if opts.CreateBlockChainWithGenesisBlock.Data != "" {
-		CreateBlockChainWithGenesisBlock(opts.CreateBlockChainWithGenesisBlock.Data)
+	if opts.CreateBlockChainWithGenesisBlock.Address != "" {
+		cli.CreateBlockChainWithGenesisBlock(opts.CreateBlockChainWithGenesisBlock.Address)
 	}
 	if opts.AddBlock.Data != "" {
 		cli.AddBlock(opts.AddBlock.Data)
