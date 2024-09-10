@@ -71,7 +71,7 @@ func IsDBExist() bool {
 }
 
 // 创建带有创世区块的区块链
-func CreateBlockChainWithGenesisBlock(address string) {
+func CreateBlockChainWithGenesisBlock(address string) *BlockChain {
 	var (
 		tip []byte
 		db  *storm.DB
@@ -106,7 +106,7 @@ func CreateBlockChainWithGenesisBlock(address string) {
 		log.Panic(err)
 	}
 	tx.Commit()
-
+	return &BlockChain{Tip: tip, DB: db}
 }
 
 // 输出所有区块链
@@ -159,7 +159,7 @@ func (bc *BlockChain) PrintChain() {
 			fmt.Println("Vin:")
 			for _, in := range tx.Vins {
 				fmt.Printf("%x\n", in.TxHash)
-				fmt.Printf("%d\n", in.Index)
+				fmt.Printf("%d\n", in.Vout)
 				fmt.Printf("%s\n", in.ScriptSig)
 			}
 			fmt.Println("Vout:")
@@ -203,4 +203,169 @@ func GetBlockChainObject() *BlockChain {
 		Tip: tip,
 		DB:  db,
 	}
+}
+
+// 拿到最的区块
+func (blockChain *BlockChain) GetLastBlock() *Block {
+	var lastBlock Block
+	err := blockChain.DB.Get(BLOCK_BUCKET, blockChain.Tip, &lastBlock)
+	if err != nil {
+		log.Panic(err)
+	}
+	return &lastBlock
+}
+
+// 获取 未花费的输出
+
+// 如果一个地地对应的TXOut未花费，那么这个Transaction就应该添加到数据中返回
+func (blockChain *BlockChain) UnSpentTransationsWithAddress(address string) []*TXOutput {
+	// var unSpentTxs []*Transaction
+	var unUTXOs []*TXOutput
+	spentTXOutputs := make(map[string][]int64) // key是txid，value是vout的索引
+	// {hash:[0,1,2]}
+	// 获取所有的区块
+	it := blockChain.Iterator()
+	for {
+		block := it.Next()
+		fmt.Printf("正在遍历第%v个区块\n", block)
+
+		for _, tx := range block.Txs {
+			// txHash
+			// Vins 获取所有的输入,消费的UTXO
+			if !tx.IsCoinbaseTransaction() {
+				for _, in := range tx.Vins {
+					// 是否能解锁
+					if in.UnLockWithAddress(address) {
+						// unSpentTxs = append(unSpentTxs, tx)
+						spentTXOutputs[BytesToStr(in.TxHash)] = append(spentTXOutputs[BytesToStr(in.TxHash)], in.Vout) //
+					}
+				}
+			}
+			fmt.Printf("消费的：%v\n", spentTXOutputs)
+			// Vouts 获取所有的输出
+			for index, out := range tx.Vouts {
+				if out.UnLockWithAddress(address) {
+					fmt.Printf("未消费的：%v\n", out)
+					fmt.Printf("len：%v\n", len(spentTXOutputs))
+					if spentTXOutputs != nil {
+						if len(spentTXOutputs) != 0 {
+							for txHash, indexArray := range spentTXOutputs {
+								if txHash == BytesToStr(tx.TxHash) {
+									for _, i := range indexArray {
+										if index == int(i) && txHash == BytesToStr(tx.TxHash) {
+											continue
+										} else {
+											unUTXOs = append(unUTXOs, out)
+										}
+									}
+								}
+							}
+						} else {
+							unUTXOs = append(unUTXOs, out)
+						}
+					}
+				}
+			}
+		}
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if big.NewInt(0).Cmp(&hashInt) == 0 {
+			break
+		}
+	}
+	return unUTXOs
+}
+
+// 挖掘新的区块
+func (blockChain *BlockChain) MineNewBlock(from []string, to []string, amount []string) *BlockChain {
+	fmt.Println("正在挖矿...")
+	fmt.Println(from)
+	fmt.Println(to)
+	fmt.Println(amount)
+
+	// 1、通过相关参数创建一个新的交易 Transaction 数组
+
+	// 1、通过相关参数创建一个新的交易 Transaction 数组
+	var txs []*Transaction
+	for i := 0; i < len(from); i++ {
+		// 1、创建新的交易
+		tx := NewSimpleTransaction(from[i], to[i], StrToInt64(amount[i]))
+		txs = append(txs, tx)
+	}
+	// 2、创建新的区块
+	blockChain.AddBlockToBlockChain(txs)
+	// 3、更新区块链
+
+	return nil
+}
+
+// 如果一个地址的UTXO数量大于0，则返回这些UTXO
+func (blockChain *BlockChain) UnUTXOs(address string) []*UTXO {
+	// var utxos []*UTXO
+	var unUTXOs []*UTXO
+	spentTXOutputs := make(map[string][]int64) // key是txid，value是vout的索引
+	// {hash:[0,1,2]}
+	// 获取所有的区块
+	it := blockChain.Iterator()
+	for {
+		block := it.Next()
+		fmt.Printf("正在遍历第%v个区块\n", block)
+
+		for _, tx := range block.Txs {
+			// txHash
+			// Vins 获取所有的输入,消费的UTXO
+			if !tx.IsCoinbaseTransaction() {
+				for _, in := range tx.Vins {
+					// 是否能解锁
+					if in.UnLockWithAddress(address) {
+						// unSpentTxs = append(unSpentTxs, tx)
+						spentTXOutputs[BytesToStr(in.TxHash)] = append(spentTXOutputs[BytesToStr(in.TxHash)], in.Vout) //
+					}
+				}
+			}
+			// Vouts 获取所有的输出
+			for index, out := range tx.Vouts {
+				if out.UnLockWithAddress(address) {
+					fmt.Printf("len：%v\n", len(spentTXOutputs))
+					if spentTXOutputs != nil {
+						if len(spentTXOutputs) != 0 {
+
+							for txHash, indexArray := range spentTXOutputs {
+								for _, i := range indexArray {
+									if index == int(i) && txHash == BytesToStr(tx.TxHash) {
+										continue
+									} else {
+										utxo := &UTXO{tx.TxHash, int64(index), out, block.Hash}
+										unUTXOs = append(unUTXOs, utxo)
+									}
+								}
+							}
+						} else {
+							utxo := &UTXO{tx.TxHash, int64(index), out, block.Hash}
+							unUTXOs = append(unUTXOs, utxo)
+						}
+					}
+				}
+			}
+		}
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if big.NewInt(0).Cmp(&hashInt) == 0 {
+			break
+		}
+	}
+	return unUTXOs
+}
+
+// 查询余额
+func (blockChain *BlockChain) GetBalance(address string) int64 {
+	utxos := blockChain.UnUTXOs(address)
+	var amount int64
+	for _, out := range utxos {
+		fmt.Printf("未消费的：%v\n", out)
+		amount += out.Output.Value
+	}
+	return amount
 }

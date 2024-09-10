@@ -20,20 +20,11 @@ type Transaction struct {
 	// 输出
 	Vouts []*TXOutput
 }
-type TXInput struct {
-	// 交易hash
-	TxHash []byte
-	// 索引
-	Index int64
-	//解锁脚本
-	ScriptSig string
-}
 
-type TXOutput struct {
-	// 转账金额
-	Value int64
-	// 锁定脚本
-	ScriptPubKey string //用户名
+// 是否是coinbase交易
+func (tx *Transaction) IsCoinbaseTransaction() bool {
+	// fmt.Printf("len(tx.Vins[0].TxHash):%d,tx.Vins[0].Vout:%d\n", len(tx.Vins[0].TxHash), tx.Vins[0].Vout)
+	return len(tx.Vins[0].TxHash) == 0 && tx.Vins[0].Vout == -1
 }
 
 // Transaction 序列化
@@ -59,6 +50,35 @@ func NewCoinbaseTx(address string) *Transaction {
 	// 3.交易hash
 	tx := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	// 4.序列化 设置hash 值
+	tx.HashTransaction()
+	return tx
+}
+
+// 1.有一个函数，返回from 这个人所有的未花费的输出 所对应的Transaction
+// 2.
+// 2.普通区块 转账时 Transaction
+func NewSimpleTransaction(from, to string, amount int64) *Transaction {
+	// 1.获取所有未花费的输出
+	resValue := int64(10) // 1.创建交易输入
+	// 2.创建交易输入
+	var txInputs []*TXInput
+	var txOutputs []*TXOutput
+	// 1.有一个函数，返回from 这个人所有的未花费的输出 所对应的Transaction
+	// UnSpentTransationsWithAddress(from)
+	// 通unSpentTxs 返回 from这个人所有的未花费的输出
+
+	// 代表消费
+	txInput := &TXInput{StrToBytes("d6ff8b222c15efdcbf57a2f62533a83e8d8213e8bfc4e3a836beaa645f329b50"), 0, from}
+	txInputs = append(txInputs, txInput)
+	// 转账
+	txOutput := &TXOutput{amount, to}
+	txOutputs = append(txOutputs, txOutput)
+	// 3.找零
+	txOutput = &TXOutput{resValue - amount, from}
+	txOutputs = append(txOutputs, txOutput)
+	// 4.创建交易
+	tx := &Transaction{[]byte{}, txInputs, txOutputs}
+	// 5.设置hash
 	tx.HashTransaction()
 	return tx
 }
