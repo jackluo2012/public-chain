@@ -1,7 +1,6 @@
 package blc
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -17,85 +16,9 @@ type BlockCommand struct {
 	GetBalance                       GetBalanceCommand                       `command:"getbalance" description:"Get balance of the address"`
 }
 
-// 子命令 添加区块
-type SendBlockCommand struct {
-	From   string `short:"f" long:"from" description:"Source address"`
-	To     string `short:"t" long:"to" description:"Destination address"`
-	Amount string `short:"a" long:"amount" description:"Amount to send"`
-}
-
-func (s *SendBlockCommand) Execute(args []string) error {
-	if s.From == "" || s.To == "" || s.Amount == "" {
-		fmt.Println("Invalid command, please check your command")
-		return errors.New("Invalid command, please check your command")
-	}
-	fmt.Printf("sendblock - from: %s - to: %s - amount: %s \n", s.From, s.To, s.Amount)
-	return nil
-}
-
-type CreateBlockChainWithGenesisBlockCommand struct {
-	Address string `short:"a" long:"address" description:"address for the genesis block"`
-}
-
-type AddBlockCommand struct {
-	Data string `short:"d" long:"data" description:"Data for the block"`
-}
-
-func (b *AddBlockCommand) Execute(args []string) error {
-	return nil
-}
-
-// 子命令 打印区块链
-type PrintChainCommand struct {
-	Print bool `short:"p" long:"printchain" description:"Print the blockchain"`
-}
-
-func (b *PrintChainCommand) Execute(args []string) error {
-	return nil
-}
-
-type GetBalanceCommand struct {
-	Address string `short:"a" long:"address" description:"address to get balance"`
-}
-
 type CLI struct {
 }
 
-// 添加区块
-func (cli *CLI) AddBlock(data string) {
-	blockChain := GetBlockChainObject()
-	defer blockChain.DB.Close()
-	blockChain.AddBlockToBlockChain([]*Transaction{})
-}
-func (cli *CLI) CreateBlockChainWithGenesisBlock(address string) {
-
-	blockChain := CreateBlockChainWithGenesisBlock(address)
-	defer blockChain.DB.Close()
-}
-
-// 打印区块链
-func (cli *CLI) PrintChain() {
-	blockChain := GetBlockChainObject()
-	defer blockChain.DB.Close()
-	blockChain.PrintChain()
-}
-
-// 转账
-func (cli *CLI) Send(form, to, amount []string) {
-	blockChain := GetBlockChainObject()
-	defer blockChain.DB.Close()
-	// 转账
-	blockChain.MineNewBlock(form, to, amount)
-}
-
-// 获取余额
-func (cli *CLI) GetBalance(address string) {
-	blockChain := GetBlockChainObject()
-	defer blockChain.DB.Close()
-	amount := blockChain.GetBalance(address)
-	fmt.Printf("address %s balance is %d\n", address, amount)
-
-}
 func (cli *CLI) Run() {
 	// 实例化顶层命令
 	var opts BlockCommand
