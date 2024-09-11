@@ -247,7 +247,15 @@ func (blockChain *BlockChain) UnUTXOs(address string, txs []*Transaction) []*Tra
 	var unspentTXs []*Transaction
 	// {hash:[0,1,2]}
 	//将未打包的交易传入就行计算未花费的输出
-	unspentTXs = append(unspentTXs, txs...)
+	if len(txs) > 0 {
+		//倒序遍历交易
+		for i := len(txs) - 1; i >= 0; i-- {
+			//将未打包的交易传入
+			unspentTXs = append(unspentTXs, txs[i])
+		}
+
+	}
+
 	// 获取所有的区块
 	it := blockChain.Iterator()
 	for {
