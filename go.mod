@@ -2,6 +2,8 @@ module public-chain
 
 go 1.23.0
 
+require golang.org/x/crypto v0.27.0
+
 require (
 	github.com/asdine/storm/v3 v3.2.1 // indirect
 	github.com/jessevdk/go-flags v1.6.1 // indirect

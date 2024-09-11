@@ -3,6 +3,8 @@ package main
 import (
 	// "fmt"
 	// "log"
+
+	"fmt"
 	"public-chain/blc"
 )
 
@@ -13,8 +15,14 @@ func main() {
 	// defer genesisBlockChain.DB.Close()
 	// cli := blc.CLI{Blc: genesisBlockChain}
 	// cli.Run()
+	wallet := blc.NewWallet()
+	address := wallet.GetAddress()
+	fmt.Printf("address:%s\n", address)
+	IsValid := wallet.IsValidAddress(address)
+	fmt.Printf("IsValid:%t\n", IsValid)
 	cli := blc.CLI{}
 	cli.Run()
+
 	// 新增区块
 	// genesisBlockChain.AddBlockToBlockChain("Send 100 RMB to zhangsan")
 	// genesisBlockChain.AddBlockToBlockChain("Send 200 RMB to lisi")

@@ -2,10 +2,13 @@ package blc
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
+
+	"golang.org/x/crypto/ripemd160"
 )
 
 func IntToHex(num int64) []byte {
@@ -49,4 +52,25 @@ func StrToBytes(str string) []byte {
 // 字节 数组 转成 string
 func BytesToStr(bytes []byte) string {
 	return hex.EncodeToString(bytes)
+}
+
+// 字节数组反转
+func ReverseBytes(data []byte) {
+	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
+		data[i], data[j] = data[j], data[i]
+	}
+}
+
+// Sha256Hash
+func Sha256Hash(data []byte) []byte {
+	hash := sha256.New()
+	hash.Write(data)
+	return hash.Sum(nil)
+}
+
+// Ripemd160Hash
+func Ripemd160Hash(data []byte) []byte {
+	hash := ripemd160.New()
+	hash.Write(data)
+	return hash.Sum(nil)
 }
