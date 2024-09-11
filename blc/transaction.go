@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"fmt"
 )
 
 /**
@@ -23,7 +24,7 @@ type Transaction struct {
 
 // 是否是coinbase交易
 func (tx *Transaction) IsCoinbaseTransaction() bool {
-	// fmt.Printf("len(tx.Vins[0].TxHash):%d,tx.Vins[0].Vout:%d\n", len(tx.Vins[0].TxHash), tx.Vins[0].Vout)
+	fmt.Printf("len(tx.Vins):%v\n", tx.Vins)
 	return len(tx.Vins[0].TxHash) == 0 && tx.Vins[0].Vout == -1
 }
 
@@ -57,24 +58,30 @@ func NewCoinbaseTx(address string) *Transaction {
 // 1.有一个函数，返回from 这个人所有的未花费的输出 所对应的Transaction
 // 2.
 // 2.普通区块 转账时 Transaction
-func NewSimpleTransaction(from, to string, amount int64) *Transaction {
+func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*Transaction) *Transaction {
 	// 1.获取所有未花费的输出
-	resValue := int64(10) // 1.创建交易输入
 	// 2.创建交易输入
 	var txInputs []*TXInput
 	var txOutputs []*TXOutput
-	// 1.有一个函数，返回from 这个人所有的未花费的输出 所对应的Transaction
-	// UnSpentTransationsWithAddress(from)
-	// 通unSpentTxs 返回 from这个人所有的未花费的输出
 
-	// 代表消费
-	txInput := &TXInput{StrToBytes("d6ff8b222c15efdcbf57a2f62533a83e8d8213e8bfc4e3a836beaa645f329b50"), 0, from}
-	txInputs = append(txInputs, txInput)
+	// 通unSpentTxs 返回 from这个人所有的未花费的输出
+	money, spendableUTXOs := bc.FindSpendableUTXOs(from, amount, txs)
+
+	for txHash, indexArray := range spendableUTXOs {
+		for _, index := range indexArray {
+			// 代表消费
+			txInput := &TXInput{StrToBytes(txHash), index, from}
+			txInputs = append(txInputs, txInput)
+		}
+	}
+	fmt.Printf("txInputs:%v\n", txInputs)
+	fmt.Println(len(txInputs))
+
 	// 转账
 	txOutput := &TXOutput{amount, to}
 	txOutputs = append(txOutputs, txOutput)
 	// 3.找零
-	txOutput = &TXOutput{resValue - amount, from}
+	txOutput = &TXOutput{money - amount, from}
 	txOutputs = append(txOutputs, txOutput)
 	// 4.创建交易
 	tx := &Transaction{[]byte{}, txInputs, txOutputs}
