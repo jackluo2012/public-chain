@@ -69,7 +69,7 @@ func Sha256Hash(data []byte) []byte {
 }
 
 // Ripemd160Hash
-func Ripemd160Hash(data []byte) []byte {
+func Ripemd160HashUtils(data []byte) []byte {
 	hash := ripemd160.New()
 	hash.Write(data)
 	return hash.Sum(nil)

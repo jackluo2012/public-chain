@@ -15,6 +15,7 @@ type BlockCommand struct {
 	PrintChain                       PrintChainCommand                       `command:"printchain" description:"Print all the blocks in the blockchain"`
 	GetBalance                       GetBalanceCommand                       `command:"getbalance" description:"Get balance of the address"`
 	CreateWallet                     CreateWalletCommand                     `command:"createwallet" description:"Create wallet"`
+	AddressLists                     AddressListsCommand                     `command:"addresslists" description:"Get address lists"`
 }
 
 type CLI struct {
@@ -54,6 +55,11 @@ func (cli *CLI) Run() {
 	// 创建 钱包
 	if opts.CreateWallet.Create {
 		cli.CreateWallet()
+	}
+	// 查看所有的钱包地址
+	if opts.AddressLists.All {
+		lists := cli.listAddressLists()
+		fmt.Println(lists)
 	}
 	// fmt.Println("====", opts.AddBlock.Data)
 }

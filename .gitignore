@@ -1,2 +1,5 @@
 blockchain.db
 *.exe
+*.bat
+*.db
+wallets.dat

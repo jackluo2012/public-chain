@@ -44,10 +44,9 @@ func newKeyPair() (ecdsa.PrivateKey, []byte) {
 }
 
 // 获取地址
-
 func (w *Wallet) GetAddress() string {
 	//1 . hash160
-	ripemd160Hash := w.Ripemd160Hash()
+	ripemd160Hash := Ripemd160Hash(w.PublicKey)
 	// 4个字节 + 20个字节 = 24个字节
 	// version {0} + hash160 +4个字节 -> 25个字节
 	address := append([]byte{version}, ripemd160Hash...)
@@ -60,11 +59,11 @@ func (w *Wallet) GetAddress() string {
 	return string(Base58Encode(address))
 }
 
-func (w *Wallet) Ripemd160Hash() []byte {
+func Ripemd160Hash(publickey []byte) []byte {
 	// 1. sha256
-	sha256Hash := Sha256Hash(w.PublicKey)
+	sha256Hash := Sha256Hash(publickey)
 	// 2. ripemd160
-	return Ripemd160Hash(sha256Hash)
+	return Ripemd160HashUtils(sha256Hash)
 }
 
 // 检查钱包的地址是否合法

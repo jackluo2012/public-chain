@@ -160,12 +160,12 @@ func (bc *BlockChain) PrintChain() {
 			for _, in := range tx.Vins {
 				fmt.Printf("%x\n", in.TxHash)
 				fmt.Printf("%d\n", in.Vout)
-				fmt.Printf("%s\n", in.ScriptSig)
+				fmt.Printf("%s\n", in.Signature)
 			}
 			fmt.Println("Vout:")
 			for _, out := range tx.Vouts {
 				fmt.Printf("%d\n", out.Value)
-				fmt.Printf("%s\n", out.ScriptPubKey)
+				fmt.Printf("%s\n", out.Ripemd160Hash)
 			}
 		}
 		fmt.Println("--------------------------------------------------\n")
@@ -277,13 +277,13 @@ func (blockChain *BlockChain) UnUTXOs(address string, txs []*Transaction) []*Tra
 						}
 					}
 				}
-				if out.UnLockWithAddress(address) {
+				if out.UnLockScriptPubKeyWithAddress(address) {
 					unspentTXs = append(unspentTXs, tx)
 				}
 			}
 			if tx.IsCoinbaseTransaction() == false {
 				for _, in := range tx.Vins {
-					if in.UnLockWithAddress(address) {
+					if in.UnLockScript(address) {
 						spentTXs[txHash] = append(spentTXs[txHash], in.Vout)
 					}
 				}
@@ -312,7 +312,7 @@ Work:
 		txid := BytesToStr(tx.TxHash)
 
 		for outid, out := range tx.Vouts {
-			if out.UnLockWithAddress(from) && accumulated < amount {
+			if out.UnLockScriptPubKeyWithAddress(from) && accumulated < amount {
 				accumulated += out.Value
 				unspentOutputs[txid] = append(unspentOutputs[txid], int64(outid))
 
@@ -333,7 +333,7 @@ func (blockChain *BlockChain) GetBalance(address string) int64 {
 	for _, out := range utxos {
 		fmt.Printf("未消费的：%v\n", out)
 		for _, vout := range out.Vouts {
-			if vout.UnLockWithAddress(address) {
+			if vout.UnLockScriptPubKeyWithAddress(address) {
 				amount += vout.Value
 			}
 		}

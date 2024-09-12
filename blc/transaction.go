@@ -45,9 +45,9 @@ func (tx *Transaction) HashTransaction() {
 // 1.创世区块 Transaction
 func NewCoinbaseTx(address string) *Transaction {
 	// 1.输入
-	txInput := &TXInput{[]byte{}, -1, "Genesis Data"}
+	txInput := &TXInput{[]byte{}, -1, nil, []byte{}}
 	// 2.输出
-	txOutput := &TXOutput{10, address}
+	txOutput := NewTXOutput(10, address)
 	// 3.交易hash
 	tx := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	// 4.序列化 设置hash 值
@@ -63,6 +63,8 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	// 2.创建交易输入
 	var txInputs []*TXInput
 	var txOutputs []*TXOutput
+	wallets, _ := NewWallets()
+	wallet := wallets.WalletsMap[from]
 
 	// 通unSpentTxs 返回 from这个人所有的未花费的输出
 	money, spendableUTXOs := bc.FindSpendableUTXOs(from, amount, txs)
@@ -70,7 +72,7 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	for txHash, indexArray := range spendableUTXOs {
 		for _, index := range indexArray {
 			// 代表消费
-			txInput := &TXInput{StrToBytes(txHash), index, from}
+			txInput := &TXInput{StrToBytes(txHash), index, wallet.PublicKey, nil}
 			txInputs = append(txInputs, txInput)
 		}
 	}
@@ -78,10 +80,10 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	fmt.Println(len(txInputs))
 
 	// 转账
-	txOutput := &TXOutput{amount, to}
+	txOutput := NewTXOutput(amount, to)
 	txOutputs = append(txOutputs, txOutput)
 	// 3.找零
-	txOutput = &TXOutput{money - amount, from}
+	txOutput = NewTXOutput(money-amount, from)
 	txOutputs = append(txOutputs, txOutput)
 	// 4.创建交易
 	tx := &Transaction{[]byte{}, txInputs, txOutputs}

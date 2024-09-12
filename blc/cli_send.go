@@ -22,7 +22,7 @@ func (s *SendBlockCommand) Execute(args []string) error {
 	to := JsonToArr(s.To)
 	for index, v := range from {
 		//检查地址是否合法
-		if !IsValidAddress(v) || IsValidAddress(to[index]) {
+		if !IsValidAddress(v) || !IsValidAddress(to[index]) {
 			fmt.Println("Invalid address")
 			return errors.New("Invalid address")
 		}

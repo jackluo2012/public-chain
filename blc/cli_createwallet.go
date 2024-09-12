@@ -1,6 +1,8 @@
 package blc
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // 子命令 创建钱包
 type CreateWalletCommand struct {
@@ -15,7 +17,10 @@ func (c *CreateWalletCommand) Execute(args []string) error {
 
 // 创建钱包
 func (cli *CLI) CreateWallet() {
-	wallets := NewWallets()
+	wallets, _ := NewWallets()
+
 	address := wallets.CreateWallet()
+
 	fmt.Printf("Your address is: %s\n", address)
+	fmt.Println(len(wallets.WalletsMap))
 }
