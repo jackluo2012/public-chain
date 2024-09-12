@@ -17,6 +17,17 @@ func (s *SendBlockCommand) Execute(args []string) error {
 		fmt.Println("Invalid command, please check your command")
 		return errors.New("Invalid command, please check your command")
 	}
+	// 判断 地址是否合法
+	from := JsonToArr(s.From)
+	to := JsonToArr(s.To)
+	for index, v := range from {
+		//检查地址是否合法
+		if !IsValidAddress(v) || IsValidAddress(to[index]) {
+			fmt.Println("Invalid address")
+			return errors.New("Invalid address")
+		}
+	}
+
 	fmt.Printf("sendblock - from: %s - to: %s - amount: %s \n", s.From, s.To, s.Amount)
 	return nil
 }

@@ -68,7 +68,7 @@ func (w *Wallet) Ripemd160Hash() []byte {
 }
 
 // 检查钱包的地址是否合法
-func (w *Wallet) IsValidAddress(address string) bool {
+func IsValidAddress(address string) bool {
 	// 1. base58解码
 	decodeBytes := Base58Decode([]byte(address))
 	fmt.Printf("decodeBytes:%x\n", decodeBytes)
