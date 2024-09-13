@@ -2,6 +2,9 @@ package blc
 
 import (
 	// "fmt"
+	"bytes"
+	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -42,7 +45,15 @@ func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) error {
 		return err
 	}
 	// fmt.Println("lastBlock", lastBlock)
-	// 创建新的区块
+	// 在建立新区块之前，需要先验证交易
+	for _, tx := range txs {
+		if !bc.VerifyTransaction(tx) {
+			// log.Panic("交易验证失败")
+			// return errors.New("交易验证失败")
+		}
+	}
+
+	//2. 创建新的区块
 	newBlock := NewBlock(lastBlock.Height+1, lastBlock.Hash, txs)
 	// 将新的区块保存到数据库
 	err = tx.Save(newBlock)
@@ -160,7 +171,7 @@ func (bc *BlockChain) PrintChain() {
 			for _, in := range tx.Vins {
 				fmt.Printf("%x\n", in.TxHash)
 				fmt.Printf("%d\n", in.Vout)
-				fmt.Printf("%s\n", in.Signature)
+				fmt.Printf("%s\n", BytesToStr(in.Signature))
 			}
 			fmt.Println("Vout:")
 			for _, out := range tx.Vouts {
@@ -339,4 +350,56 @@ func (blockChain *BlockChain) GetBalance(address string) int64 {
 		}
 	}
 	return amount
+}
+
+// 对数据区块链进行数字签名
+func (blockChain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
+	// 创世区块不需要签名
+	if tx.IsCoinbaseTransaction() {
+		return
+	}
+	prevTXs := make(map[string]*Transaction)
+	for _, vin := range tx.Vins {
+		// 查找vin中的交易 对应的output hash
+		prevTX, err := blockChain.FindTransaction(vin.TxHash)
+		if err != nil {
+			log.Panic(err)
+		} else {
+			prevTXs[BytesToStr(prevTX.TxHash)] = prevTX
+		}
+	}
+	tx.Sign(privKey, prevTXs)
+
+}
+
+// 查找花费了的 tx
+func (blockChain *BlockChain) FindTransaction(txHash []byte) (*Transaction, error) {
+	it := blockChain.Iterator()
+	for {
+		block := it.Next()
+		for _, tx := range block.Txs {
+			if bytes.Compare(tx.TxHash, txHash) == 0 {
+				return tx, nil
+			}
+		}
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+	return nil, errors.New("交易不存在")
+}
+
+// VerifyTransaction 验证交易
+func (blockChain *BlockChain) VerifyTransaction(tx *Transaction) bool {
+	prevTXs := make(map[string]*Transaction)
+	for _, vin := range tx.Vins {
+		// 查找vin中的交易 对应的output hash
+		prevTX, err := blockChain.FindTransaction(vin.TxHash)
+		if err != nil {
+			log.Panic(err)
+		} else {
+			prevTXs[BytesToStr(prevTX.TxHash)] = prevTX
+		}
+	}
+	return tx.Verify(prevTXs)
 }
