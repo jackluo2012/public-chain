@@ -244,6 +244,10 @@ func (blockChain *BlockChain) MineNewBlock(from []string, to []string, amount []
 		tx := NewSimpleTransaction(from[i], to[i], StrToInt64(amount[i]), blockChain, txs)
 		txs = append(txs, tx)
 	}
+	// 奖励挖矿者
+	tx := NewCoinbaseTx(from[0])
+	txs = append(txs, tx)
+
 	// 2、创建新的区块
 	blockChain.AddBlockToBlockChain(txs)
 	// 3、更新区块链
