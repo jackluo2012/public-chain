@@ -4,7 +4,7 @@ import (
 	// "fmt"
 	"bytes"
 	"crypto/ecdsa"
-	"errors"
+
 	"fmt"
 	"log"
 	"math/big"
@@ -46,11 +46,13 @@ func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) error {
 	}
 	// fmt.Println("lastBlock", lastBlock)
 	// 在建立新区块之前，需要先验证交易
+	_txs := []*Transaction{}
 	for _, tx := range txs {
-		if !bc.VerifyTransaction(tx) {
+		if !bc.VerifyTransaction(tx, _txs) {
 			// log.Panic("交易验证失败")
 			// return errors.New("交易验证失败")
 		}
+		_txs = append(_txs, tx)
 	}
 
 	//2. 创建新的区块
@@ -357,7 +359,7 @@ func (blockChain *BlockChain) GetBalance(address string) int64 {
 }
 
 // 对数据区块链进行数字签名
-func (blockChain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
+func (blockChain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey, txs []*Transaction) {
 	// 创世区块不需要签名
 	if tx.IsCoinbaseTransaction() {
 		return
@@ -365,7 +367,7 @@ func (blockChain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.Pri
 	prevTXs := make(map[string]*Transaction)
 	for _, vin := range tx.Vins {
 		// 查找vin中的交易 对应的output hash
-		prevTX, err := blockChain.FindTransaction(vin.TxHash)
+		prevTX, err := blockChain.FindTransaction(vin.TxHash, txs)
 		if err != nil {
 			log.Panic(err)
 		} else {
@@ -377,10 +379,19 @@ func (blockChain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.Pri
 }
 
 // 查找花费了的 tx
-func (blockChain *BlockChain) FindTransaction(txHash []byte) (*Transaction, error) {
+func (blockChain *BlockChain) FindTransaction(txHash []byte, txs []*Transaction) (*Transaction, error) {
+	for _, tx := range txs {
+		if bytes.Compare(tx.TxHash, txHash) == 0 {
+			return tx, nil
+		}
+	}
+
 	it := blockChain.Iterator()
 	for {
 		block := it.Next()
+		if block == nil {
+			break
+		}
 		for _, tx := range block.Txs {
 			if bytes.Compare(tx.TxHash, txHash) == 0 {
 				return tx, nil
@@ -390,15 +401,15 @@ func (blockChain *BlockChain) FindTransaction(txHash []byte) (*Transaction, erro
 			break
 		}
 	}
-	return nil, errors.New("交易不存在")
+	return nil, nil //errors.New("交易不存在")
 }
 
 // VerifyTransaction 验证交易
-func (blockChain *BlockChain) VerifyTransaction(tx *Transaction) bool {
+func (blockChain *BlockChain) VerifyTransaction(tx *Transaction, txs []*Transaction) bool {
 	prevTXs := make(map[string]*Transaction)
 	for _, vin := range tx.Vins {
 		// 查找vin中的交易 对应的output hash
-		prevTX, err := blockChain.FindTransaction(vin.TxHash)
+		prevTX, err := blockChain.FindTransaction(vin.TxHash, txs)
 		if err != nil {
 			log.Panic(err)
 		} else {
@@ -406,4 +417,69 @@ func (blockChain *BlockChain) VerifyTransaction(tx *Transaction) bool {
 		}
 	}
 	return tx.Verify(prevTXs)
+}
+
+// FindUTXO 查找未花费的交易输出
+func (blockChain *BlockChain) FindUTXOMap() map[string]*TxOutputs {
+
+	blcIterator := blockChain.Iterator()
+	// 存储已药费的output信息
+	spenttableUTXOMap := make(map[string][]*TXInput)
+
+	utxoMaps := make(map[string]*TxOutputs)
+	for {
+		block := blcIterator.Next()
+		if block == nil {
+			break
+		}
+		fmt.Printf("正在遍历区块：%d\n", len(block.Txs))
+		//需要倒过来写，因为都是从消费后，再往前找
+		// 因为一个 区块中的交易，有可能有多个交易，有多个未花费的输出
+		for i := len(block.Txs) - 1; i >= 0; i-- {
+			txOutputs := &TxOutputs{UTXOS: make([]*UTXO, 0)}
+
+			// txOutputs.TxOutputs = make([]*TXOutput)
+			tx := block.Txs[i]
+			//如果是coinbase交易，则跳过
+			if !tx.IsCoinbaseTransaction() {
+				for _, txInput := range tx.Vins {
+					// input 里面的hash，是上一个交易的hash
+					txInputHash := BytesToStr(txInput.TxHash)
+					spenttableUTXOMap[txInputHash] = append(spenttableUTXOMap[txInputHash], txInput)
+				}
+			}
+		WorkOutLoop:
+			for index, vout := range tx.Vouts {
+				txHash := BytesToStr(tx.TxHash)
+				txInputs := spenttableUTXOMap[txHash]
+				// 判断当前的vout是否已经被花费了
+				if len(txInputs) > 0 {
+					isSpent := false
+					for _, txInput := range txInputs {
+						outPublicKey := vout.Ripemd160Hash
+						inPublicKey := txInput.PublicKey
+						if bytes.Compare(outPublicKey, inPublicKey) == 0 {
+							if txInput.Vout == int64(index) {
+								isSpent = true
+								break WorkOutLoop
+							}
+							// } else {
+							// 	txOutputs.TxOutputs = append(txOutputs.TxOutputs, vout)
+							// }
+						}
+					}
+					if !isSpent {
+						txOutputs.UTXOS = append(txOutputs.UTXOS, &UTXO{tx.TxHash, int64(index), vout, block.Hash})
+					}
+				} else {
+					txOutputs.UTXOS = append(txOutputs.UTXOS, &UTXO{tx.TxHash, int64(index), vout, block.Hash})
+				}
+
+			}
+			// 设置键值对
+			utxoMaps[BytesToStr(tx.TxHash)] = txOutputs
+		}
+
+	}
+	return utxoMaps
 }

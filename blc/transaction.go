@@ -97,7 +97,7 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	// 5.设置hash
 	tx.HashTransaction()
 	// 6.进行数字签名
-	bc.SignTransaction(tx, wallet.PrivateKey)
+	bc.SignTransaction(tx, wallet.PrivateKey, txs)
 	// 7.返回
 	return tx
 }

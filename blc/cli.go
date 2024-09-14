@@ -16,6 +16,7 @@ type BlockCommand struct {
 	GetBalance                       GetBalanceCommand                       `command:"getbalance" description:"Get balance of the address"`
 	CreateWallet                     CreateWalletCommand                     `command:"createwallet" description:"Create wallet"`
 	AddressLists                     AddressListsCommand                     `command:"addresslists" description:"Get address lists"`
+	Test                             AtestCommand                            `command:"test" description:"test"`
 }
 
 type CLI struct {
@@ -60,6 +61,11 @@ func (cli *CLI) Run() {
 	if opts.AddressLists.All {
 		lists := cli.listAddressLists()
 		fmt.Println(lists)
+	}
+	// 测试
+	if opts.Test.Print {
+		fmt.Println("====", opts.Test.Print)
+		cli.Test()
 	}
 	// fmt.Println("====", opts.AddBlock.Data)
 }

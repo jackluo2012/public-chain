@@ -21,4 +21,6 @@ func (cli *CLI) CreateBlockChainWithGenesisBlock(address string) {
 
 	blockChain := CreateBlockChainWithGenesisBlock(address)
 	defer blockChain.DB.Close()
+	utxoSet := &UTXOSet{blockChain}
+	utxoSet.ResetUTXOSet()
 }

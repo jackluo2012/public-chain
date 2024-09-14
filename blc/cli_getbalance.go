@@ -21,7 +21,8 @@ func (b *GetBalanceCommand) Execute(args []string) error {
 func (cli *CLI) GetBalance(address string) {
 	blockChain := GetBlockChainObject()
 	defer blockChain.DB.Close()
-	amount := blockChain.GetBalance(address)
+	utxo := &UTXOSet{blockChain}
+	amount := utxo.GetBalance(address)
 	fmt.Printf("address %s balance is %d\n", address, amount)
 
 }
