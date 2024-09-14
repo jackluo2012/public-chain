@@ -9,6 +9,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math/big"
+	"time"
 )
 
 /**
@@ -65,7 +66,7 @@ func NewCoinbaseTx(address string) *Transaction {
 // 1.有一个函数，返回from 这个人所有的未花费的输出 所对应的Transaction
 // 2.
 // 2.普通区块 转账时 Transaction
-func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*Transaction) *Transaction {
+func NewSimpleTransaction(from, to string, amount int64, utxoSet *UTXOSet, txs []*Transaction) *Transaction {
 	// 1.获取所有未花费的输出
 	// 2.创建交易输入
 	var txInputs []*TXInput
@@ -74,7 +75,7 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	wallet := wallets.WalletsMap[from]
 
 	// 通unSpentTxs 返回 from这个人所有的未花费的输出
-	money, spendableUTXOs := bc.FindSpendableUTXOs(from, amount, txs)
+	money, spendableUTXOs := utxoSet.FindSpendableUTXOs(from, amount, txs)
 
 	for txHash, indexArray := range spendableUTXOs {
 		for _, index := range indexArray {
@@ -97,7 +98,7 @@ func NewSimpleTransaction(from, to string, amount int64, bc *BlockChain, txs []*
 	// 5.设置hash
 	tx.HashTransaction()
 	// 6.进行数字签名
-	bc.SignTransaction(tx, wallet.PrivateKey, txs)
+	utxoSet.Blockchain.SignTransaction(tx, wallet.PrivateKey, txs)
 	// 7.返回
 	return tx
 }
@@ -167,12 +168,13 @@ func (tx *Transaction) Serialize() []byte {
 	var result bytes.Buffer
 	// 创建编码器 打包
 	encoder := gob.NewEncoder(&result)
+
 	// 编码
 	err := encoder.Encode(tx)
 	if err != nil {
 		panic(err)
 	}
-	return result.Bytes()
+	return bytes.Join([][]byte{Int64ToBytes(time.Now().Unix()), result.Bytes()}, []byte{})
 }
 
 // Verify Transaction -- 数字签名 验证

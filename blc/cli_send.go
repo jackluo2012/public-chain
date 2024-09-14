@@ -37,5 +37,9 @@ func (cli *CLI) Send(form, to, amount []string) {
 	blockChain := GetBlockChainObject()
 	defer blockChain.DB.Close()
 	// 转账
-	blockChain.MineNewBlock(form, to, amount)
+	block := blockChain.MineNewBlock(form, to, amount)
+	//更新本地数据库
+	utxoSet := UTXOSet{blockChain}
+	//转帐后更新UTXO
+	utxoSet.Update(block)
 }

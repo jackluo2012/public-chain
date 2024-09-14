@@ -30,19 +30,19 @@ func (bc *BlockChain) Iterator() *BlockChainIterator {
 }
 
 // 添加区块到区块链
-func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) error {
+func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) (*Block, error) {
 	// 从数据库获取最后一个区块的hash值
 	tx, err := bc.DB.Begin(true)
 	if err != nil {
 		log.Panic(err)
-		return err
+		return nil, err
 	}
 	// // 获取最后一个区块
 	var lastBlock Block
 	err = tx.One("Hash", bc.Tip, &lastBlock)
 	if err != nil {
 		log.Panic(err)
-		return err
+		return nil, err
 	}
 	// fmt.Println("lastBlock", lastBlock)
 	// 在建立新区块之前，需要先验证交易
@@ -62,17 +62,17 @@ func (bc *BlockChain) AddBlockToBlockChain(txs []*Transaction) error {
 	if err != nil {
 		log.Panic(err)
 		tx.Rollback() // 回滚
-		return err
+		return nil, err
 	}
 	// 更新区块链的最后一个区块的hash值
 	err = tx.Set(BLOCK_BUCKET, "l", newBlock.Hash)
 	if err != nil {
 		log.Panic(err)
 		tx.Rollback() // 回滚
-		return err
+		return nil, err
 	}
 	bc.Tip = newBlock.Hash
-	return tx.Commit() // 提交
+	return newBlock, tx.Commit() // 提交
 }
 
 // 判断数据库是否存在
@@ -231,19 +231,20 @@ func (blockChain *BlockChain) GetLastBlock() *Block {
 // 获取 未花费的输出
 
 // 挖掘新的区块
-func (blockChain *BlockChain) MineNewBlock(from []string, to []string, amount []string) *BlockChain {
+func (blockChain *BlockChain) MineNewBlock(from []string, to []string, amount []string) *Block {
 	fmt.Println("正在挖矿...")
 	fmt.Println(from)
 	fmt.Println(to)
 	fmt.Println(amount)
 
-	// 1、通过相关参数创建一个新的交易 Transaction 数组
+	// 1、建立一笔交易
+	utxoSet := &UTXOSet{blockChain}
 
 	// 1、通过相关参数创建一个新的交易 Transaction 数组
 	var txs []*Transaction
 	for i := 0; i < len(from); i++ {
 		// 1、创建新的交易
-		tx := NewSimpleTransaction(from[i], to[i], StrToInt64(amount[i]), blockChain, txs)
+		tx := NewSimpleTransaction(from[i], to[i], StrToInt64(amount[i]), utxoSet, txs)
 		txs = append(txs, tx)
 	}
 	// 奖励挖矿者
@@ -251,10 +252,13 @@ func (blockChain *BlockChain) MineNewBlock(from []string, to []string, amount []
 	txs = append(txs, tx)
 
 	// 2、创建新的区块
-	blockChain.AddBlockToBlockChain(txs)
+	block, err := blockChain.AddBlockToBlockChain(txs)
+	if err != nil {
+		log.Panic(err)
+	}
 	// 3、更新区块链
 
-	return nil
+	return block
 }
 
 // 如果一个地址的UTXO数量大于0，则返回这些UTXO
