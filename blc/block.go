@@ -2,7 +2,6 @@ package blc
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/gob"
 	"time"
 )
@@ -51,14 +50,20 @@ func (b *Block) Deserialize(data []byte) *Block {
 
 // 将Txs转换成[]byte
 func (b *Block) HashTransactions() []byte {
-	var txHashes [][]byte
-	var txHash [32]byte
+	// var txHashes [][]byte
+	// var txHash [32]byte
 
+	// for _, tx := range b.Txs {
+	// 	txHashes = append(txHashes, tx.TxHash)
+	// }
+	// txHash = sha256.Sum256(bytes.Join(txHashes, []byte{}))
+	// return txHash[:]
+	var transaction [][]byte
 	for _, tx := range b.Txs {
-		txHashes = append(txHashes, tx.TxHash)
+		transaction = append(transaction, tx.Serialize())
 	}
-	txHash = sha256.Sum256(bytes.Join(txHashes, []byte{}))
-	return txHash[:]
+	mTree := NewMerkleTree(transaction)
+	return mTree.RootNode.Data
 }
 
 func NewBlock(height int64, prevHash []byte, txs []*Transaction) *Block {
